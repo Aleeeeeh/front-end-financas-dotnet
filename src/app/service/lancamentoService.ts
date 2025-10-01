@@ -10,10 +10,10 @@ type objetoFiltroLanc = {
     usuario: string
 }
 
-export default class LancamentoService extends ApiService{
+export default class LancamentoService extends ApiService {
 
-    constructor(){
-        super('/api/lancamentos');
+    constructor() {
+        super('/lancamento');
     }
 
     obterListaMeses = () => {
@@ -37,13 +37,13 @@ export default class LancamentoService extends ApiService{
     obterListaTipos = () => {
         return [
             { label: 'Selecione...', value: '' },
-            { label: 'Despesa', value: 'DESPESA' } ,
-            { label: 'Receita', value: 'RECEITA' }
+            { label: 'Receita', value: 1 },
+            { label: 'Despesa', value: 2 }
         ]
     }
 
-    retornaNomeMes = (numeroMes:number) =>{
-        switch(numeroMes){
+    retornaNomeMes = (numeroMes: number) => {
+        switch (numeroMes) {
             case 1:
                 return "JANEIRO";
             case 2:
@@ -71,83 +71,80 @@ export default class LancamentoService extends ApiService{
         }
     }
 
-    obterPorId(id: number){
+    obterPorId(id: number) {
         return this.get(`/${id}`);
     }
-    
-    alterarStatus(id: string, status:string){
+
+    alterarStatus(id: number, status: number) {
         //@ts-ignore
-        return this.put(`/${id}/atualiza-status`, { status })
+        return this.put(`/atualiza-status-lancamento/${id}?statusLancamentoId=${status}`, {})
     }
 
-    validacao(Lancamento: any){
+    validacao(Lancamento: any) {
         const erros = [];
 
-        if(!Lancamento.ano){
+        if (!Lancamento.ano) {
             erros.push("Informe o ano.");
         }
 
-        if(!Lancamento.mes){
+        if (!Lancamento.mes) {
             erros.push("Informe o mês.");
         }
 
-        if(!Lancamento.descricao){
+        if (!Lancamento.descricao) {
             erros.push("Informe a descrição.");
         }
 
-        if(!Lancamento.valor){
+        if (!Lancamento.valor) {
             erros.push("Informe o valor.");
         }
 
-        if(!Lancamento.tipo){
+        if (!Lancamento.tipoLancamento) {
             erros.push("Informe o tipo.");
         }
 
-        if(erros && erros.length > 0){
+        if (erros && erros.length > 0) {
             //@ts-ignore
             throw new ErroValidacao(erros);
         }
     }
 
-    salvar(Lancamento: object){
-        return this.post('/', Lancamento)
+    salvar(Lancamento: object) {
+        console.log(Lancamento)
+        return this.post('', Lancamento)
     }
 
-    atualizar(Lancamento: any){
-        return this.put(`/${Lancamento.id}`, Lancamento)
+    atualizar(id: any, Lancamento: any) {
+        return this.put(`/${id}`, Lancamento)
     }
 
-    consultar(lancamentoFiltro: objetoFiltroLanc){
-        let params = `?ano=${lancamentoFiltro.ano}`
+    consultar(lancamentoFiltro: objetoFiltroLanc) {
+        let params = `/por-filtro?ano=${lancamentoFiltro.ano}`
 
-        if(lancamentoFiltro.mes){
+        if (lancamentoFiltro.mes) {
             params = `${params}&mes=${lancamentoFiltro.mes}`
         }
 
-        if(lancamentoFiltro.tipo){
-            params = `${params}&tipo=${lancamentoFiltro.tipo}`
+        if (lancamentoFiltro.tipo) {
+            params = `${params}&tipoLancamento=${lancamentoFiltro.tipo}`
         }
 
-        if(lancamentoFiltro.status){
-            params = `${params}&status=${lancamentoFiltro.status}`
+        if (lancamentoFiltro.usuario) {
+            params = `${params}&usuarioId=${lancamentoFiltro.usuario}`
         }
 
-        if(lancamentoFiltro.usuario){
-            params = `${params}&usuario=${lancamentoFiltro.usuario}`
-        }
-
-        if(lancamentoFiltro.descricao){
+        if (lancamentoFiltro.descricao) {
             params = `${params}&descricao=${lancamentoFiltro.descricao}`
         }
 
         return this.get(params)
     }
 
-    deletar(id: string){
+    deletar(id: string) {
         return this.delete(`/${id}`)
     }
 
-    consultaLancamentosPorPeriodo(mesInicial:number,mesFinal:number,anoInicial:string,anoFinal:string,usuarioID:string){
+    consultaLancamentosPorPeriodo(mesInicial: number, mesFinal: number, anoInicial: string, anoFinal: string, usuarioID: string) {
         let params = `/peridoLancamento?usuarioId=${usuarioID}&anoAtual=${anoInicial}&anoFinal=${anoFinal}&mesAtual=${mesInicial}&mesFinal=${mesFinal}`
 
         console.log(params);

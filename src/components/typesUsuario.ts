@@ -1,6 +1,6 @@
 export type objetoUsuario = {
     id: number,
-    nome: string,
+    nomeAcesso: string,
     email: number,
-    ultimoLogin: string;
+    ultimoAcesso: string;
 }

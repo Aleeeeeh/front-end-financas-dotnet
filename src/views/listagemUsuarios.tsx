@@ -1,28 +1,29 @@
 import React, { useEffect, useState } from 'react'
 import Card from '../components/Card'
 import UsuarioService from '../app/service/usuarioService';
-import {objetoUsuario} from '../components/typesUsuario'
+import { objetoUsuario } from '../components/typesUsuario'
 
-export default function telaUsuarios(){
+export default function telaUsuarios() {
 
     const [usuario, setUsuario] = useState<objetoUsuario[]>([]);
 
     const service = new UsuarioService;
 
-     useEffect(() => {
+    useEffect(() => {
         service.consultaUsuarios()
-        .then(response=>{
-            setUsuario(response.data);
-        })
-        
-    },[]);
-    
-    return(
+            .then(response => {
+                setUsuario(response.data);
+            })
+
+    }, []);
+
+    return (
         <Card title="Listagem de usuários">
             <div className='row'>
                 <table className="table table-hover">
                     <thead>
                         <tr>
+                            <th scope="col">Id</th>
                             <th scope="col">Nome</th>
                             <th scope="col">Email</th>
                             <th scope="col">Visto por último</th>
@@ -31,25 +32,24 @@ export default function telaUsuarios(){
                     <tbody>
                         {
                             usuario.map(info => {
-                                var vistoPorUltimo = "";
-                                if(info.ultimoLogin == null){
-                                    vistoPorUltimo = "Ainda não foi feito logout nesse conta";
-                                }else{
-                                    var arrayVistoPorUltimo = info.ultimoLogin.split(" ");
-                                    
-                                    var data = arrayVistoPorUltimo[0];
-                                    var hora = arrayVistoPorUltimo[1];
-                                    vistoPorUltimo = `${data} - ${hora}`
-                                }
+                                let date = new Date(info.ultimoAcesso);
 
-                                return(
+                                // Formatar data
+                                const pad = (n: any) => n.toString().padStart(2, "0");
+
+                                const dataHoraFormatado =
+                                    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+                                    `às ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+
+                                return (
                                     <tr key={info.id}>
-                                        <td>{info.nome}</td>
+                                        <td>{info.id}</td>
+                                        <td>{info.nomeAcesso}</td>
                                         <td>{info.email}</td>
-                                        <td>{vistoPorUltimo}</td>
+                                        <td>{dataHoraFormatado}</td>
                                     </tr>
                                 )
-                                
+
                             })
                         }
                     </tbody>
