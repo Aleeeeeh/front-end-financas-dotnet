@@ -22,10 +22,6 @@ class UsuarioService extends ApiService {
         return this.post(`/autentica?email=${credenciais.email}&senha=${credenciais.senha}`, {});
     }
 
-    obterSaldoPorUsuario(id: string) {
-        return this.get(`/${id}/saldo`)
-    }
-
     salvar(usuario: objetoCadUsuario) {
         return this.post('', usuario)
     }

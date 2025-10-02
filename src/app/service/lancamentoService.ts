@@ -152,4 +152,7 @@ export default class LancamentoService extends ApiService {
         return this.get(params);
     }
 
+    obterSaldoPorUsuario(usuarioId: string) {
+        return this.get(`/saldo-por-usuario?usuarioId=${usuarioId}`)
+    }
 }
