@@ -144,8 +144,8 @@ export default class LancamentoService extends ApiService {
         return this.delete(`/${id}`)
     }
 
-    consultaLancamentosPorPeriodo(mesInicial: number, mesFinal: number, anoInicial: string, anoFinal: string, usuarioID: string) {
-        let params = `/peridoLancamento?usuarioId=${usuarioID}&anoAtual=${anoInicial}&anoFinal=${anoFinal}&mesAtual=${mesInicial}&mesFinal=${mesFinal}`
+    consultaLancamentosPorPeriodo(mesInicial: any, mesFinal: any, anoInicial: any, anoFinal: any, usuarioID: number) {
+        let params = `/por-perido?mesInicial=${mesInicial}&anoInicial=${anoInicial}&mesFinal=${mesFinal}&anoFinal=${anoFinal}&usuarioId=${usuarioID}`;
 
         console.log(params);
 

@@ -1,42 +1,49 @@
-import React, { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Card from '../components/Card';
-import {objetoRelatorio} from '../components/typesRelatorio'
+import { objetoRelatorio } from '../components/typesRelatorio'
 import { Calendar } from 'primereact/calendar';
 import * as mensagem from '../components/toastr'
 import localStorageService from '../app/service/localStorageService';
 import LancamentoService from '../app/service/lancamentoService';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable'
+import { StatusLancamento, TipoLancamento } from '../components/typesLancamentos';
 
-export default function relatorioLancamentos(){
+// Mapas de de/para
+const TipoLancamentoMap: Record<TipoLancamento, string> = {
+    [TipoLancamento.RECEITA]: "Receita",
+    [TipoLancamento.DESPESA]: "Despesa",
+};
 
-    const [lancamentos, setLancamentos] = useState<objetoRelatorio[]>([]);
+const StatusLancamentoMap: Record<StatusLancamento, string> = {
+    [StatusLancamento.PENDENTE]: "Pendente",
+    [StatusLancamento.CANCELADO]: "Cancelado",
+    [StatusLancamento.EFETIVADO]: "Efetivado",
+};
+
+export default function relatorioLancamentos() {
     const [dataInicialCompleta, setdataInicialCompleta] = useState<any>('');
     const [dataFinalCompleta, setdataFinalCompleta] = useState<any>('');
-    const [mesInicial, setMesInicial] = useState<any>('');
-    const [anoInicial, setAnoInicial] = useState<any>('');
-    const [mesFinal, setMesFinal] = useState<any>('');
-    const [anoFinal, setAnoFinal] = useState<any>('');
     const [lancamentoFiltrados, setLancamentosFiltrados] = useState<objetoRelatorio[]>([]);
 
     const service = new LancamentoService();
 
     const dadosDeUsuario = localStorageService.obterItem("_usuario_logado");
 
-    const converterObjetoEmString = (objeto: object) =>{
+    const converterObjetoEmString = (objeto: object) => {
         var objetoConvertidoEmString = objeto.toString();
 
         return objetoConvertidoEmString;
     }
 
-    const converterStringEmObjetoFormatado = (dataEmString: string) =>{
+    const converterStringEmObjetoFormatado = (dataEmString: string) => {
         var objetoFormatado = dataEmString.split(" ");
 
         return objetoFormatado;
     }
 
-    const retornarNumeroDoMes = (nomeMes:string) =>{
-        switch(nomeMes){
+    const retornarNumeroDoMes = (nomeMes: string) => {
+        switch (nomeMes) {
             case "Jan":
                 return 1;
             case "Feb":
@@ -66,91 +73,132 @@ export default function relatorioLancamentos(){
         }
     }
 
-    const exibirElementos = () =>{
+    const exibirElementos = () => {
         document.querySelector("#tabela")?.classList.remove("visually-hidden");
         document.querySelector("#botaoGeraPDF")?.classList.remove("visually-hidden");
         document.querySelector("#botaoGeraExcel")?.classList.remove("visually-hidden");
     }
 
-    const esconderElementos = () =>{
+    const esconderElementos = () => {
         document.querySelector("#tabela")?.classList.add("visually-hidden");
         document.querySelector("#botaoGeraPDF")?.classList.add("visually-hidden");
         document.querySelector("#botaoGeraExcel")?.classList.add("visually-hidden");
     }
 
-    const validaSePeriodoFoiInformado = () =>{
-        if((dataInicialCompleta !== "" && dataFinalCompleta !== "")&&(dataInicialCompleta !== null && dataFinalCompleta !== null)){
+    const validaSePeriodoFoiInformado = () => {
+        if ((dataInicialCompleta !== "" && dataFinalCompleta !== "") && (dataInicialCompleta !== null && dataFinalCompleta !== null)) {
             exibirElementos();
-        }else{
+        } else {
             mensagem.mensagemAlerta("Favor informe período completo");
             esconderElementos();
             return "PeriodoIncompleto";
         }
     }
 
-    const validaSeGravouOPeridoNaVariavelDeLancamentos = () =>{
-        if(lancamentoFiltrados.length == 0){
+    const validaSeGravouOPeridoNaVariavelDeLancamentos = () => {
+        if (lancamentoFiltrados.length == 0) {
             mensagem.mensagemAlerta("Não existem dados para o periodo informado");
             esconderElementos();
             return lancamentoFiltrados.length;
         }
     }
 
-    const gravaPeridoDeDatas = () =>{
-        var dataInicialCompletaEmString = converterObjetoEmString(dataInicialCompleta);
-        var objetodataInicialCompletaFormatadoEmPosicoes = converterStringEmObjetoFormatado(dataInicialCompletaEmString);
-        var dataFinalCompletaEmString = converterObjetoEmString(dataFinalCompleta);
-        var objetodataFinalCompletaFormatadoEmPosicoes = converterStringEmObjetoFormatado(dataFinalCompletaEmString);
-        setMesFinal(retornarNumeroDoMes(objetodataFinalCompletaFormatadoEmPosicoes[1]));
-        setAnoFinal(objetodataFinalCompletaFormatadoEmPosicoes[3]);
-        setMesInicial(retornarNumeroDoMes(objetodataInicialCompletaFormatadoEmPosicoes[1]));
-        setAnoInicial(objetodataInicialCompletaFormatadoEmPosicoes[3]);
-        validaSeGravouOPeridoNaVariavelDeLancamentos();
-    }
+    const gerarPDF = () => {
+        if (validaSePeriodoFoiInformado() == "PeriodoIncompleto") {
+            return false;
+        }
+        if (validaSeGravouOPeridoNaVariavelDeLancamentos() == 0) {
+            return false;
+        }
 
-    const gerarPDF = () =>{
-        if(validaSePeriodoFoiInformado() == "PeriodoIncompleto"){
-            return false;
-        }
-        if(validaSeGravouOPeridoNaVariavelDeLancamentos() == 0){
-            return false;
-        }
+        // Calcula saldo final
+        const saldoFinal = lancamentoFiltrados.reduce((total, lanc) => {
+            if (lanc.tipoLancamento === TipoLancamento.RECEITA) {
+                return total + lanc.valor;
+            } else if (lanc.tipoLancamento === TipoLancamento.DESPESA) {
+                return total - lanc.valor;
+            }
+            return total;
+        }, 0);
 
         var doc = new jsPDF({
             orientation: 'landscape',
             format: 'letter'
         })
-        autoTable(doc,{html: "#tabela"});
+
+        autoTable(doc, {
+            html: "#tabela",
+            didDrawPage: (data) => {
+                // Título centralizado no topo
+                doc.setFontSize(18);
+                doc.setFont("helvetica", "bold");
+                doc.text(
+                    "Relatório de Finanças",
+                    doc.internal.pageSize.getWidth() / 2,
+                    20,
+                    { align: "center" }
+                );
+
+                // Saldo final calculado dinamicamente
+                doc.setFontSize(12);
+                doc.setFont("helvetica", "normal");
+                doc.text(
+                    `Saldo final: ${saldoFinal.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL"
+                    })}`,
+                    data.settings.margin.left,
+                    30
+                );
+            },
+            margin: { top: 40 }
+        });
+
         doc.save("Relatorio-lancamentos-mensal.pdf");
-        
+
     }
 
-    const gerarExcel = () =>{
-        if(validaSePeriodoFoiInformado() == "PeriodoIncompleto"){
+    const gerarExcel = () => {
+        if (validaSePeriodoFoiInformado() == "PeriodoIncompleto") {
             return false;
         }
-        if(validaSeGravouOPeridoNaVariavelDeLancamentos() == 0){
+        if (validaSeGravouOPeridoNaVariavelDeLancamentos() == 0) {
             return false;
         }
 
         mensagem.mensagemAlerta("Em desevolvimento ...");
     }
 
-    const consultaLancamentos = () =>{
-        if(validaSePeriodoFoiInformado() == "PeriodoIncompleto"){
+    const consultaLancamentos = () => {
+
+        if (validaSePeriodoFoiInformado() == "PeriodoIncompleto") {
             return false;
         }
-        gravaPeridoDeDatas();
-        
-        service.consultaLancamentosPorPeriodo(mesInicial,mesFinal,anoFinal,anoFinal,dadosDeUsuario.id)
-        .then(Response =>{
-            setLancamentosFiltrados(Response.data);
-        })
-    }
-    
-    console.log(lancamentoFiltrados);
 
-    return(
+        const dataInicialCompletaEmString = converterObjetoEmString(dataInicialCompleta);
+        const objDataInicial = converterStringEmObjetoFormatado(dataInicialCompletaEmString);
+
+        const dataFinalCompletaEmString = converterObjetoEmString(dataFinalCompleta);
+        const objDataFinal = converterStringEmObjetoFormatado(dataFinalCompletaEmString);
+
+        const mesIni = retornarNumeroDoMes(objDataInicial[1]);
+        const anoIni = objDataInicial[3];
+        const mesFim = retornarNumeroDoMes(objDataFinal[1]);
+        const anoFim = objDataFinal[3];
+
+        service.consultaLancamentosPorPeriodo(mesIni, mesFim, anoIni, anoFim, dadosDeUsuario.id)
+            .then(response => {
+                if (response.data.length === 0) {
+                    mensagem.mensagemAlerta("Não existem dados para o período informado");
+                    esconderElementos();
+                } else {
+                    setLancamentosFiltrados(response.data);
+                    exibirElementos();
+                }
+            });
+    }
+
+    return (
         <Card title="Exportar relatório de lançamentos">
             <div className='row'>
                 <div className='col-md-8'>
@@ -163,14 +211,14 @@ export default function relatorioLancamentos(){
                 </div>
                 <div className='col-md-4 d-flex justify-content-end'>
                     <button id="botaoGeraPDF"
-                            className="btn btn-danger visually-hidden"
-                            onClick={gerarPDF}>
-                            <i className="pi pi-file-pdf" title='Gerar PDF'></i>
+                        className="btn btn-danger visually-hidden"
+                        onClick={gerarPDF}>
+                        <i className="pi pi-file-pdf" title='Gerar PDF'></i>
                     </button>
                     <button id="botaoGeraExcel"
-                            className="btn btn-success visually-hidden"
-                            onClick={gerarExcel}>
-                            <i className="pi pi-file-excel" title='Gerar Excel'></i>
+                        className="btn btn-success visually-hidden"
+                        onClick={gerarExcel}>
+                        <i className="pi pi-file-excel" title='Gerar Excel'></i>
                     </button>
                 </div>
             </div>
@@ -184,22 +232,24 @@ export default function relatorioLancamentos(){
                     <thead>
                         <tr>
                             <th scope="col">Descrição</th>
-                            <th scope="col">Tipo</th>
                             <th scope="col">Valor</th>
                             <th scope="col">Mês</th>
                             <th scope="col">Ano</th>
+                            <th scope="col">Tipo</th>
+                            <th scope="col">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         {
-                            lancamentoFiltrados.map(response =>{
-                                return(
-                                    <tr>
+                            lancamentoFiltrados.map(response => {
+                                return (
+                                    <tr key={response.id}>
                                         <td>{response.descricao}</td>
-                                        <td>{response.tipo}</td>
-                                        <td>{response.valor.toLocaleString('pt-br',{style: 'currency', currency: 'BRL'})}</td>
-                                        <td>{service.retornaNomeMes(parseInt(response.mes))}</td>
+                                        <td>{response.valor.toLocaleString('pt-br', { style: 'currency', currency: 'BRL' })}</td>
+                                        <td>{service.retornaNomeMes(response.mes)}</td>
                                         <td>{response.ano}</td>
+                                        <td>{TipoLancamentoMap[response.tipoLancamento]}</td>
+                                        <td>{StatusLancamentoMap[response.statusLancamento]}</td>
                                     </tr>
                                 )
                             })

@@ -131,8 +131,6 @@ export default function ConsultaLancamento() {
                     </FormGroup>
                 </div>
                 <div className="col-lg-6">
-                    {/* Colocando só a primeira letra no filtro descrição ele já traz, isso foi criado no 
-                            método de filtrar na API do Java */}
                     <FormGroup label="Descrição: " htmlFor="InputDesc">
                         <input type="text"
                             id="InputDesc"
