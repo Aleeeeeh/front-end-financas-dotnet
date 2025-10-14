@@ -1,4 +1,4 @@
-import React, { useContext } from 'react'
+import { useContext } from 'react'
 import Home from '../views/home'
 import Login from '../views/Login'
 import CadastroUsuario from '../views/cadastroUsuarios'

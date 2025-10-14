@@ -22,7 +22,7 @@ export default function CadastroUsuario() {
             senha: senha,
             senhaRepeticao: senhaRepeticao
         }
-        console.log(objetoUsuario)
+
         try {
             service.validar(objetoUsuario)
         } catch (error: any) {
